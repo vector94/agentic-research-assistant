@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str
+    opensearch_url: str = "http://127.0.0.1:9200"
+    ollama_url: str = "http://127.0.0.1:11434"
 
 
 @lru_cache
