@@ -1,7 +1,15 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class PdfParserSettings(BaseModel):
+    max_pages: int = 30
+    max_file_size_mb: int = 20
+    do_ocr: bool = False
+    do_table_structure: bool = True
 
 
 class Settings(BaseSettings):
@@ -10,6 +18,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        env_nested_delimiter="__",
     )
 
     app_name: str = "Agentic Research Assistant API"
@@ -20,6 +29,8 @@ class Settings(BaseSettings):
     database_url: str
     opensearch_url: str = "http://127.0.0.1:9200"
     ollama_url: str = "http://127.0.0.1:11434"
+
+    pdf_parser: PdfParserSettings = PdfParserSettings()
 
 
 @lru_cache

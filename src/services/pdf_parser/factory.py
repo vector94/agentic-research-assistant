@@ -1,0 +1,16 @@
+from functools import lru_cache
+
+from src.config import get_settings
+from src.services.pdf_parser.parser import PdfParserService
+
+
+@lru_cache(maxsize=1)
+def make_pdf_parser_service() -> PdfParserService:
+    settings = get_settings()
+
+    return PdfParserService(
+        max_pages=settings.pdf_parser.max_pages,
+        max_file_size_mb=settings.pdf_parser.max_file_size_mb,
+        do_ocr=settings.pdf_parser.do_ocr,
+        do_table_structure=settings.pdf_parser.do_table_structure,
+    )

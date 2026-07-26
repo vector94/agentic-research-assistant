@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import Paper
 from src.schemas.paper import ArxivPaper
+from src.schemas.pdf import PdfContent
 
 
 class PaperRepository:
@@ -23,3 +26,18 @@ class PaperRepository:
         await self.session.refresh(database_paper)
 
         return database_paper
+
+    async def update_pdf_content(self, paper: Paper, pdf_content: PdfContent) -> Paper:
+        paper.raw_text = pdf_content.raw_text
+        paper.sections = [section.model_dump() for section in pdf_content.sections]
+        paper.references = pdf_content.references
+        paper.parser_used = pdf_content.parser_used.value
+        paper.parser_metadata = pdf_content.parser_metadata
+        paper.pdf_processed = True
+        paper.pdf_processing_date = datetime.now(UTC)
+
+        self.session.add(paper)
+        await self.session.commit()
+        await self.session.refresh(paper)
+
+        return paper

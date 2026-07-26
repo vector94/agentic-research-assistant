@@ -49,3 +49,6 @@ docs/
 # Operating-system metadata
 .DS_Store
 Thumbs.db
+
+# Downloaded research papers
+data/

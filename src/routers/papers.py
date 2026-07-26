@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
+from src.exceptions import ArxivApiError
 from src.repositories.paper import PaperRepository
 from src.services.arxiv import ArxivClient
 from src.services.ingestion import PaperIngestionService
+from src.services.pdf_downloader import PdfDownloader
+from src.services.pdf_parser.factory import make_pdf_parser_service
 
 router = APIRouter(prefix="/api/v1/papers", tags=["papers"])
 
@@ -17,7 +20,17 @@ async def ingest_papers(
 ) -> dict[str, int]:
     arxiv_client = ArxivClient()
     paper_repository = PaperRepository(session)
-    service = PaperIngestionService(arxiv_client, paper_repository)
+    pdf_downloader = PdfDownloader()
+    pdf_parser = make_pdf_parser_service()
+    service = PaperIngestionService(arxiv_client, paper_repository, pdf_downloader, pdf_parser)
 
-    result = await service.ingest(query=query, max_results=max_results)
-    return result
+    try:
+        return await service.ingest(
+            query=query,
+            max_results=max_results,
+        )
+    except ArxivApiError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
