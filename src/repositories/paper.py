@@ -41,3 +41,9 @@ class PaperRepository:
         await self.session.refresh(paper)
 
         return paper
+
+    async def list_processed(self, limit: int = 100) -> list[Paper]:
+        statement = select(Paper).where(Paper.pdf_processed.is_(True)).limit(limit)
+        result = await self.session.execute(statement)
+
+        return list(result.scalars().all())

@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     database_url: str
     opensearch_url: str = "http://127.0.0.1:9200"
+    opensearch_index_name: str = "research-papers"
     ollama_url: str = "http://127.0.0.1:11434"
 
     pdf_parser: PdfParserSettings = PdfParserSettings()

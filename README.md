@@ -3,8 +3,8 @@
 A research assistant for finding academic papers and answering questions using
 retrieved sources.
 
-The project currently supports arXiv ingestion and PDF processing. Retrieval and
-question answering will be added next.
+The project currently supports arXiv ingestion, PDF processing, and OpenSearch
+indexing. Search and question answering will be added next.
 
 ## What works
 
@@ -12,6 +12,7 @@ question answering will be added next.
 - Skip papers that have already been stored
 - Download and parse PDFs with Docling
 - Store paper metadata and extracted content in PostgreSQL
+- Index processed papers in OpenSearch
 - Run the API and supporting services with Docker Compose
 
 ## Architecture
@@ -25,6 +26,9 @@ flowchart LR
     PDF --> Docling
     Docling --> Ingestion
     Ingestion --> PostgreSQL[(PostgreSQL)]
+    FastAPI --> Indexing[Indexing service]
+    PostgreSQL --> Indexing
+    Indexing --> OpenSearch[(OpenSearch)]
 ```
 
 ## Stack
@@ -52,6 +56,12 @@ To ingest one recent AI paper:
 ```bash
 curl -X POST \
   "http://localhost:8000/api/v1/papers/ingest?query=cat%3Acs.AI&max_results=1"
+```
+
+To index processed papers in OpenSearch:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/papers/index?limit=100"
 ```
 
 Run the checks with:
