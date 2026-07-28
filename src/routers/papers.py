@@ -1,9 +1,12 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
 from src.exceptions import ArxivApiError
 from src.repositories.paper import PaperRepository
+from src.schemas.search import PaperSearchResponse
 from src.services.arxiv import ArxivClient
 from src.services.indexing import PaperIndexingService
 from src.services.ingestion import PaperIngestionService
@@ -11,6 +14,7 @@ from src.services.opensearch.factory import make_opensearch_client
 from src.services.paper_indexer import PaperIndexer
 from src.services.pdf_downloader import PdfDownloader
 from src.services.pdf_parser.factory import make_pdf_parser_service
+from src.services.search import PaperSearchService
 
 router = APIRouter(prefix="/api/v1/papers", tags=["papers"])
 
@@ -54,3 +58,29 @@ async def index_papers(
     )
 
     return await service.index_processed_papers(limit=limit)
+
+
+@router.get(
+    "/search",
+    response_model=PaperSearchResponse,
+)
+async def search_papers(
+    query: str = Query(min_length=2),
+    size: int = Query(default=10, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    categories: list[str] | None = Query(default=None),
+    latest: bool = Query(default=False),
+    fuzzy: bool = Query(default=False),
+) -> PaperSearchResponse:
+    opensearch_client = make_opensearch_client()
+    service = PaperSearchService(opensearch_client)
+
+    return await asyncio.to_thread(
+        service.search,
+        query=query,
+        size=size,
+        from_=offset,
+        categories=categories,
+        latest=latest,
+        fuzzy=fuzzy,
+    )
