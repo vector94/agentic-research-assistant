@@ -24,12 +24,19 @@ class Settings(BaseSettings):
     app_name: str = "Agentic Research Assistant API"
     app_version: str = "0.1.0"
     environment: Literal["development", "testing", "production"] = "development"
-    debug: bool = False
+    app_debug: bool = False
 
     database_url: str
     opensearch_url: str = "http://127.0.0.1:9200"
     opensearch_index_name: str = "research-papers"
     ollama_url: str = "http://127.0.0.1:11434"
+
+    embedding_provider: str = "jina"
+    embedding_model: str = "jina-embeddings-v3"
+    embedding_dimensions: int = 1024
+
+    jina_api_key: str = ""
+    jina_base_url: str = "https://api.jina.ai/v1"
 
     pdf_parser: PdfParserSettings = PdfParserSettings()
 

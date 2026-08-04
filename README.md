@@ -52,7 +52,7 @@ docker compose up -d --build
 uv run alembic upgrade head
 ```
 
-API documentation is available at <http://localhost:8000/docs>.
+API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 To ingest one recent AI paper:
 

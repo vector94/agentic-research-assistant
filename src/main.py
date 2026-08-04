@@ -8,7 +8,7 @@ settings = get_settings()
 app = FastAPI(
     title="Agentic Research Assistant API",
     version="0.1.0",
-    debug=settings.debug,
+    debug=settings.app_debug,
 )
 
 app.include_router(papers_router)

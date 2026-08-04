@@ -40,6 +40,9 @@ ENV/
 # Local learning and podcast notes
 docs/
 
+# Local code knowledge graph
+graphify-out/
+
 # IDE and editor settings
 .idea/
 .vscode/
