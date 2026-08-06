@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     database_url: str
     opensearch_url: str = "http://127.0.0.1:9200"
     opensearch_index_name: str = "research-papers"
+    opensearch_chunk_index_name: str = "research-paper-chunks"
     ollama_url: str = "http://127.0.0.1:11434"
 
     embedding_provider: str = "jina"

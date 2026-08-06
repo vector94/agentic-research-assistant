@@ -1,6 +1,6 @@
 from typing import Any
 
-from opensearchpy import OpenSearch
+from opensearchpy import OpenSearch, helpers
 
 
 class OpenSearchClient:
@@ -37,6 +37,31 @@ class OpenSearchClient:
             refresh=True,
         )
         return response["result"] in {"created", "updated"}
+
+    def bulk_index_chunks(
+        self,
+        chunks: list[dict[str, Any]],
+    ) -> dict[str, int]:
+        actions = [
+            {
+                "_index": self.index_name,
+                "_id": chunk["chunk_id"],
+                "_source": chunk,
+            }
+            for chunk in chunks
+        ]
+
+        indexed, errors = helpers.bulk(
+            self.client,
+            actions,
+            refresh=True,
+            raise_on_error=False,
+        )
+
+        return {
+            "indexed": indexed,
+            "failed": len(errors),
+        }
 
     def search_papers(
         self,
