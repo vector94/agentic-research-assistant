@@ -83,5 +83,41 @@ class HybridIndexingService:
             "failed": result["failed"],
         }
 
+    async def index_papers(
+        self,
+        papers: list[Paper],
+    ) -> dict[str, int]:
+        totals = {
+            "papers_found": len(papers),
+            "papers_indexed": 0,
+            "papers_skipped": 0,
+            "papers_failed": 0,
+            "chunks_created": 0,
+            "embeddings_generated": 0,
+            "chunks_indexed": 0,
+            "chunks_failed": 0,
+        }
+
+        for paper in papers:
+            try:
+                result = await self.index_paper(paper)
+            except Exception:
+                totals["papers_failed"] += 1
+                continue
+
+            totals["chunks_created"] += result["chunks_created"]
+            totals["embeddings_generated"] += result["embeddings_generated"]
+            totals["chunks_indexed"] += result["indexed"]
+            totals["chunks_failed"] += result["failed"]
+
+            if result["chunks_created"] == 0:
+                totals["papers_skipped"] += 1
+            elif result["failed"] > 0:
+                totals["papers_failed"] += 1
+            else:
+                totals["papers_indexed"] += 1
+
+        return totals
+
     async def close(self) -> None:
         await self.embedding_client.close()

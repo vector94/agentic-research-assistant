@@ -63,6 +63,62 @@ class OpenSearchClient:
             "failed": len(errors),
         }
 
+    def search_chunks_vector(
+        self,
+        query_embedding: list[float],
+        size: int = 10,
+    ) -> dict[str, Any]:
+        body = {
+            "size": size,
+            "query": {
+                "knn": {
+                    "embedding": {
+                        "vector": query_embedding,
+                        "k": size,
+                    }
+                }
+            },
+            "_source": {
+                "excludes": ["embedding"],
+            },
+        }
+
+        return self.client.search(
+            index=self.index_name,
+            body=body,
+        )
+
+    def search_chunks_bm25(
+        self,
+        query: str,
+        size: int = 10,
+    ) -> dict[str, Any]:
+        body = {
+            "size": size,
+            "query": {
+                "multi_match": {
+                    "query": query,
+                    "fields": [
+                        "chunk_text^3",
+                        "title^2",
+                        "abstract",
+                    ],
+                    "type": "best_fields",
+                    "operator": "or",
+                    "fuzziness": "AUTO",
+                    "prefix_length": 2,
+                }
+            },
+            "_source": {
+                "excludes": ["embedding"],
+            },
+        }
+
+        return self.client.search(
+            index=self.index_name,
+            body=body,
+        )
+
     def search_papers(
         self,
         query: str,
