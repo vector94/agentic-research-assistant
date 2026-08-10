@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from src.config import get_settings
 from src.routers.papers import router as papers_router
+from src.routers.rag import router as rag_router
 from src.services.opensearch.setup import setup_opensearch
 
 settings = get_settings()
@@ -36,6 +37,7 @@ app = FastAPI(
 )
 
 app.include_router(papers_router)
+app.include_router(rag_router)
 
 
 @app.get("/api/v1/health")
