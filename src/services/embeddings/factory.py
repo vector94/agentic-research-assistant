@@ -6,7 +6,8 @@ from src.services.embeddings.jina import JinaEmbeddingClient
 def make_embedding_client(
     settings: Settings | None = None,
 ) -> EmbeddingClient:
-    settings = settings or get_settings()
+    if settings is None:
+        settings = get_settings()
 
     if settings.embedding_provider != "jina":
         raise NotImplementedError(f"Embedding provider '{settings.embedding_provider}' is not implemented")

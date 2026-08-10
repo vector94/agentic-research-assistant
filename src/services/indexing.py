@@ -1,7 +1,10 @@
 import asyncio
+import logging
 
 from src.repositories.paper import PaperRepository
 from src.services.paper_indexer import PaperIndexer
+
+logger = logging.getLogger(__name__)
 
 
 class PaperIndexingService:
@@ -26,8 +29,11 @@ class PaperIndexingService:
                     indexed += 1
                 else:
                     failed += 1
-            except Exception as e:
-                print(f"Failed to index paper {paper.arxiv_id}: {e}")
+            except Exception:
+                logger.exception(
+                    "Failed to index paper %s",
+                    paper.arxiv_id,
+                )
                 failed += 1
 
         return {"found": len(papers), "indexed": indexed, "failed": failed}

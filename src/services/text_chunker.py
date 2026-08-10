@@ -54,14 +54,9 @@ class TextChunker:
                 )
 
                 for chunk in section_chunks:
-                    metadata = chunk.metadata.model_copy(
-                        update={
-                            "chunk_index": len(chunks),
-                            "section_title": section.title,
-                        }
-                    )
-
-                    chunks.append(chunk.model_copy(update={"metadata": metadata}))
+                    chunk.metadata.chunk_index = len(chunks)
+                    chunk.metadata.section_title = section.title
+                    chunks.append(chunk)
 
             if chunks:
                 return chunks

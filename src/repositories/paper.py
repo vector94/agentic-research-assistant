@@ -9,7 +9,7 @@ from src.schemas.pdf import PdfContent
 
 
 class PaperRepository:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
     async def get_by_arxiv_id(self, arxiv_id: str) -> Paper | None:
@@ -36,7 +36,6 @@ class PaperRepository:
         paper.pdf_processed = True
         paper.pdf_processing_date = datetime.now(UTC)
 
-        self.session.add(paper)
         await self.session.commit()
         await self.session.refresh(paper)
 

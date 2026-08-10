@@ -3,8 +3,8 @@
 A research assistant for finding academic papers and answering questions using
 retrieved sources.
 
-The project currently supports arXiv ingestion, PDF processing, OpenSearch
-indexing, and BM25 paper search. Question answering will be added next.
+The project currently supports arXiv ingestion, PDF processing, section-aware
+chunking, and hybrid retrieval with BM25 and vector search.
 
 ## What works
 
@@ -14,6 +14,10 @@ indexing, and BM25 paper search. Question answering will be added next.
 - Store paper metadata and extracted content in PostgreSQL
 - Index processed papers in OpenSearch
 - Search papers with pagination, filters, highlighting, and optional typo tolerance
+- Split papers into overlapping, section-aware chunks
+- Generate passage and query embeddings with Jina AI
+- Search chunks with vector similarity or BM25
+- Combine keyword and semantic rankings with Reciprocal Rank Fusion
 - Run the API and supporting services with Docker Compose
 
 ## Architecture
@@ -29,9 +33,12 @@ flowchart LR
     Ingestion --> PostgreSQL[(PostgreSQL)]
     FastAPI --> Indexing[Indexing service]
     PostgreSQL --> Indexing
-    Indexing --> OpenSearch[(OpenSearch)]
+    Indexing --> Chunking[Text chunker]
+    Chunking --> Embeddings[Jina embeddings]
+    Embeddings --> OpenSearch[(OpenSearch)]
     FastAPI --> Search[Search service]
     Search --> OpenSearch
+    Search --> Embeddings
 ```
 
 ## Stack
@@ -40,6 +47,7 @@ flowchart LR
 - PostgreSQL, SQLAlchemy, and Alembic
 - Docling
 - OpenSearch
+- Jina AI embeddings
 - Ollama
 - Docker Compose
 - pytest and Ruff
@@ -71,6 +79,18 @@ To search indexed papers:
 
 ```bash
 curl "http://localhost:8000/api/v1/papers/search?query=language%20models&size=10&offset=0"
+```
+
+To create and index searchable paper chunks:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/papers/index/chunks?limit=100"
+```
+
+To run hybrid chunk search:
+
+```bash
+curl "http://localhost:8000/api/v1/papers/search/hybrid?query=3D%20spatial%20reasoning&size=5"
 ```
 
 Run the checks with:

@@ -1,10 +1,13 @@
 import asyncio
+import logging
 
 from src.models import Paper
 from src.schemas.pdf import PaperSection
 from src.services.embeddings.client import EmbeddingClient
 from src.services.opensearch.client import OpenSearchClient
 from src.services.text_chunker import TextChunker
+
+logger = logging.getLogger(__name__)
 
 
 class HybridIndexingService:
@@ -50,7 +53,7 @@ class HybridIndexingService:
 
         documents = []
 
-        for chunk, embedding in zip(chunks, embeddings, strict=True):
+        for chunk, embedding in zip(chunks, embeddings):
             documents.append(
                 {
                     "chunk_id": f"{chunk.arxiv_id}-{chunk.metadata.chunk_index}",
@@ -102,6 +105,10 @@ class HybridIndexingService:
             try:
                 result = await self.index_paper(paper)
             except Exception:
+                logger.exception(
+                    "Failed to index chunks for paper %s",
+                    paper.arxiv_id,
+                )
                 totals["papers_failed"] += 1
                 continue
 

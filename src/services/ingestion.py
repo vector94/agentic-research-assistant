@@ -48,8 +48,11 @@ class PaperIngestionService:
                 await self.paper_repository.update_pdf_content(database_paper, content)
                 processed += 1
 
-            except Exception as e:
-                logger.exception(f"Failed to process PDF for paper {paper.arxiv_id}: {e}")
+            except Exception:
+                logger.exception(
+                    "Failed to process PDF for paper %s",
+                    paper.arxiv_id,
+                )
                 failed += 1
 
         return {"fetched": len(papers), "stored": stored, "skipped": skipped, "processed": processed, "failed": failed}

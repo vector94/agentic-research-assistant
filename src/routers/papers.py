@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,8 +92,7 @@ async def search_papers(
     opensearch_client = make_opensearch_client()
     service = PaperSearchService(opensearch_client)
 
-    return await asyncio.to_thread(
-        service.search,
+    return await service.search(
         query=query,
         size=size,
         from_=offset,

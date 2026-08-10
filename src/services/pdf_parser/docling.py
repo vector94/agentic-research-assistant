@@ -102,5 +102,5 @@ class DoclingParser:
             raw_text=document.export_to_text(),
             sections=sections,
             parser_used=ParserType.DOCLING,
-            metadata={"source": "docling"},
+            parser_metadata={"source": "docling"},
         )

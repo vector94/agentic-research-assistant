@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import Mock
 
 from src.services.search import PaperSearchService
@@ -31,13 +32,15 @@ def test_search_converts_opensearch_response() -> None:
 
     service = PaperSearchService(opensearch_client)
 
-    result = service.search(
-        query="test",
-        size=5,
-        from_=10,
-        categories=["cs.AI"],
-        latest=True,
-        fuzzy=True,
+    result = asyncio.run(
+        service.search(
+            query="test",
+            size=5,
+            from_=10,
+            categories=["cs.AI"],
+            latest=True,
+            fuzzy=True,
+        )
     )
 
     assert result.total == 1

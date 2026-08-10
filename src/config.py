@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     opensearch_index_name: str = "research-papers"
     opensearch_chunk_index_name: str = "research-paper-chunks"
     ollama_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.2:1b"
+    ollama_timeout: float = 120.0
 
     embedding_provider: str = "jina"
     embedding_model: str = "jina-embeddings-v3"
@@ -39,9 +41,9 @@ class Settings(BaseSettings):
     jina_api_key: str = ""
     jina_base_url: str = "https://api.jina.ai/v1"
 
-    pdf_parser: PdfParserSettings = PdfParserSettings()
+    pdf_parser: PdfParserSettings = Field(default_factory=PdfParserSettings)
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()

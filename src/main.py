@@ -29,8 +29,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Agentic Research Assistant API",
-    version="0.1.0",
+    title=settings.app_name,
+    version=settings.app_version,
     debug=settings.app_debug,
     lifespan=lifespan,
 )

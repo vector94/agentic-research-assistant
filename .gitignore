@@ -31,7 +31,6 @@ ENV/
 # Local environment files and secrets
 .env
 .env.*
-!.env.example
 
 # Logs and runtime files
 *.log
