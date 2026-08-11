@@ -3,8 +3,8 @@
 A research assistant for finding academic papers and answering questions using
 retrieved sources.
 
-The project currently supports arXiv ingestion, PDF processing, section-aware
-chunking, and hybrid retrieval with BM25 and vector search.
+The project supports arXiv ingestion, PDF processing, hybrid retrieval, and
+question answering with a local language model.
 
 ## What works
 
@@ -18,6 +18,8 @@ chunking, and hybrid retrieval with BM25 and vector search.
 - Generate passage and query embeddings with Jina AI
 - Search chunks with vector similarity or BM25
 - Combine keyword and semantic rankings with Reciprocal Rank Fusion
+- Generate grounded answers with Ollama and retrieved paper chunks
+- Stream answers through the API and Gradio interface
 - Run the API and supporting services with Docker Compose
 
 ## Architecture
@@ -25,6 +27,7 @@ chunking, and hybrid retrieval with BM25 and vector search.
 ```mermaid
 flowchart LR
     Client --> FastAPI
+    Gradio --> FastAPI
     FastAPI --> Ingestion[Ingestion service]
     Ingestion --> arXiv
     Ingestion --> PDF[PDF downloader]
@@ -39,6 +42,9 @@ flowchart LR
     FastAPI --> Search[Search service]
     Search --> OpenSearch
     Search --> Embeddings
+    FastAPI --> RAG[RAG service]
+    RAG --> Search
+    RAG --> Ollama
 ```
 
 ## Stack
@@ -49,6 +55,7 @@ flowchart LR
 - OpenSearch
 - Jina AI embeddings
 - Ollama
+- Gradio
 - Docker Compose
 - pytest and Ruff
 
@@ -57,10 +64,12 @@ flowchart LR
 ```bash
 uv sync
 docker compose up -d --build
+docker compose exec ollama ollama pull llama3.2:1b
 uv run alembic upgrade head
 ```
 
 API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
+The Gradio interface is available at [http://localhost:7861](http://localhost:7861).
 
 To ingest one recent AI paper:
 
@@ -91,6 +100,22 @@ To run hybrid chunk search:
 
 ```bash
 curl "http://localhost:8000/api/v1/papers/search/hybrid?query=3D%20spatial%20reasoning&size=5"
+```
+
+To ask a question using RAG:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"How do vision-language models understand 3D geometry?","top_k":3}'
+```
+
+To stream an answer:
+
+```bash
+curl --no-buffer -X POST "http://localhost:8000/api/v1/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"How do vision-language models understand 3D geometry?","top_k":3}'
 ```
 
 Run the checks with:
