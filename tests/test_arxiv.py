@@ -2,10 +2,6 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-import arxiv
-import pytest
-
-from src.exceptions import ArxivApiError
 from src.schemas.paper import ArxivPaper
 from src.services.arxiv import ArxivClient
 
@@ -38,16 +34,3 @@ def test_search_returns_papers() -> None:
         )
     ]
     client.client.results.assert_called_once()
-
-    def test_search_translates_arxiv_http_error() -> None:
-        client = ArxivClient()
-        client.client.results = Mock(
-            side_effect=arxiv.HTTPError(
-                "https://export.arxiv.org/api/query",
-                0,
-                503,
-            )
-        )
-
-        with pytest.raises(ArxivApiError):
-            client.search("cat:cs.AI", max_results=1)

@@ -12,6 +12,11 @@ class PdfParserSettings(BaseModel):
     do_table_structure: bool = True
 
 
+class RedisSettings(BaseModel):
+    url: str = "redis://127.0.0.1:6379/0"
+    cache_ttl_seconds: int = 6 * 60 * 60
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -42,6 +47,7 @@ class Settings(BaseSettings):
     jina_base_url: str = "https://api.jina.ai/v1"
 
     pdf_parser: PdfParserSettings = Field(default_factory=PdfParserSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
 
 
 @lru_cache(maxsize=1)
