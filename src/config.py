@@ -17,6 +17,16 @@ class RedisSettings(BaseModel):
     cache_ttl_seconds: int = 6 * 60 * 60
 
 
+class LangfuseSettings(BaseModel):
+    public_key: str = ""
+    secret_key: str = ""
+    host: str = "http://127.0.0.1:3000"
+    enabled: bool = False
+    flush_at: int = 15
+    flush_interval: float = 1.0
+    debug: bool = False
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -48,6 +58,7 @@ class Settings(BaseSettings):
 
     pdf_parser: PdfParserSettings = Field(default_factory=PdfParserSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
+    langfuse: LangfuseSettings = Field(default_factory=LangfuseSettings)
 
 
 @lru_cache(maxsize=1)

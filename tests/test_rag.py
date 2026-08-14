@@ -2,8 +2,12 @@ import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 
+from src.config import LangfuseSettings
 from src.schemas.retrieval import ChunkSearchResponse, ChunkSearchResult
+from src.services.langfuse.client import LangfuseTracer
 from src.services.rag import RagService
+
+disabled_tracer = LangfuseTracer(LangfuseSettings())
 
 
 async def collect_stream(service: RagService) -> list[dict[str, object]]:
@@ -50,6 +54,7 @@ def test_answer_retrieves_context_and_generates_grounded_response() -> None:
         hybrid_search_service=hybrid_search_service,
         prompt_builder=prompt_builder,
         ollama_client=ollama_client,
+        tracer=disabled_tracer,
     )
 
     response = asyncio.run(
@@ -89,6 +94,7 @@ def test_answer_does_not_call_ollama_without_retrieved_context() -> None:
         hybrid_search_service=hybrid_search_service,
         prompt_builder=prompt_builder,
         ollama_client=ollama_client,
+        tracer=disabled_tracer,
     )
 
     response = asyncio.run(service.answer("What is quantum attention?"))
@@ -132,6 +138,7 @@ def test_answer_stream_returns_metadata_chunks_and_complete_answer() -> None:
         hybrid_search_service=hybrid_search_service,
         prompt_builder=prompt_builder,
         ollama_client=ollama_client,
+        tracer=disabled_tracer,
     )
 
     events = asyncio.run(collect_stream(service))
