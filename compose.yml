@@ -9,6 +9,10 @@ services:
       OLLAMA_URL: http://ollama:11434
       JINA_API_KEY: ${JINA_API_KEY}
       REDIS__URL: redis://redis:6379/0
+      LANGFUSE__PUBLIC_KEY: ${LANGFUSE__PUBLIC_KEY:-}
+      LANGFUSE__SECRET_KEY: ${LANGFUSE__SECRET_KEY:-}
+      LANGFUSE__HOST: ${LANGFUSE__HOST:-https://cloud.langfuse.com}
+      LANGFUSE__ENABLED: ${LANGFUSE__ENABLED:-false}
     ports:
       - "8000:8000"
     depends_on:
