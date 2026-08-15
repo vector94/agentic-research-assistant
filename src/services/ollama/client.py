@@ -1,7 +1,11 @@
 import json
 from collections.abc import AsyncIterator
+from typing import TypeVar
 
 import httpx
+from pydantic import BaseModel
+
+ResponseModelT = TypeVar("ResponseModelT", bound=BaseModel)
 
 
 class OllamaClient:
@@ -32,6 +36,28 @@ class OllamaClient:
         response.raise_for_status()
 
         return response.json()["response"]
+
+    async def generate_structured(
+        self,
+        prompt: str,
+        response_model: type[ResponseModelT],
+    ) -> ResponseModelT:
+        if not prompt.strip():
+            raise ValueError("Prompt cannot be empty")
+
+        response = await self.client.post(
+            "/api/generate",
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "format": response_model.model_json_schema(),
+                "options": {"temperature": 0},
+            },
+        )
+        response.raise_for_status()
+
+        return response_model.model_validate_json(response.json()["response"])
 
     async def generate_stream(self, prompt: str) -> AsyncIterator[str]:
         if not prompt.strip():
