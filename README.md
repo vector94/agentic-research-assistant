@@ -3,6 +3,16 @@
 A research assistant that imports arXiv papers and answers questions using
 retrieved passages from those papers.
 
+## Interface
+
+A question answered from an indexed paper:
+
+![Agentic Research Assistant interface](assets/gradio-interface.png)
+
+A question outside the indexed papers:
+
+![Question outside the indexed papers](assets/gradio-out-of-scope-question.png)
+
 ## What it does
 
 - Downloads paper metadata and PDFs from arXiv
@@ -16,27 +26,67 @@ retrieved passages from those papers.
 
 ## Architecture
 
+### Paper ingestion and indexing
+
+```mermaid
+flowchart LR
+    arXiv --> Metadata[Paper metadata]
+    arXiv --> PDF[PDF download]
+    PDF --> Docling
+    Metadata --> PostgreSQL[(PostgreSQL)]
+    Docling --> PostgreSQL
+
+    PostgreSQL --> Papers[Paper indexing]
+    Papers --> OpenSearch[(OpenSearch)]
+
+    PostgreSQL --> Chunking[Text chunking]
+    Chunking --> Jina[Jina embeddings]
+    Jina --> OpenSearch
+```
+
+### Standard RAG
+
 ```mermaid
 flowchart LR
     User --> API[FastAPI]
     User --> Gradio
     Gradio --> API
 
-    API --> Ingestion
-    Ingestion --> arXiv
-    Ingestion --> Docling
-    Ingestion --> PostgreSQL[(PostgreSQL)]
+    API --> Redis{Redis cache}
+    Redis -->|Hit| Answer
+    Redis -->|Miss| Search[Hybrid search]
 
-    PostgreSQL --> Indexing
-    Indexing --> Jina[Jina embeddings]
-    Indexing --> OpenSearch[(OpenSearch)]
+    Search --> BM25[BM25 search]
+    Search --> Jina[Jina query embedding]
+    Jina --> Vector[Vector search]
+    BM25 --> OpenSearch[(OpenSearch)]
+    Vector --> OpenSearch
+    OpenSearch --> Fusion[RRF rank fusion]
 
-    API --> RAG
-    RAG --> Redis[(Redis cache)]
-    RAG --> Jina
-    RAG --> OpenSearch
-    RAG --> Ollama
-    RAG -. traces .-> Langfuse
+    Fusion --> Prompt[Prompt construction]
+    Prompt --> Ollama
+    Ollama --> Answer
+    Answer --> Redis
+    Answer --> User
+
+    API -. traces .-> Langfuse
+```
+
+### Agentic RAG
+
+```mermaid
+flowchart TD
+    Question --> Guardrail{Research question?}
+    Guardrail -->|No| OutOfScope[Return scope guidance]
+    Guardrail -->|Yes| Retrieve[Hybrid retrieval]
+
+    Retrieve --> Grade{Relevant chunks?}
+    Grade -->|Yes| Generate[Generate grounded answer]
+    Grade -->|No, attempts remain| Rewrite[Rewrite query]
+    Rewrite --> Retrieve
+    Grade -->|No attempts remain| NoContext[Return no relevant papers]
+
+    Generate --> Result[Answer with sources and reasoning]
 ```
 
 ## Stack
@@ -97,11 +147,3 @@ uv run alembic upgrade head
 
 The interactive API documentation contains all query parameters and response
 schemas.
-
-## Checks
-
-```bash
-uv run ruff format --check .
-uv run ruff check .
-uv run pytest
-```
