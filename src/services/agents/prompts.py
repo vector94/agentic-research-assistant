@@ -7,13 +7,23 @@ class AgentPromptBuilder:
             raise ValueError("Query cannot be empty")
 
         return (
-            "Score how closely this question relates to academic research in "
-            "computer science, artificial intelligence, or machine learning. "
-            "Use a score from 0 to 100 and briefly explain the score. Questions "
-            "about research papers, models, methods, or technical findings should "
-            "score highly. Greetings, basic calculations, and unrelated subjects "
-            "should score poorly.\n\n"
-            f"Question:\n{query}\n\n"
+            "You are a guardrail evaluator assessing whether a user query is "
+            "within the scope of academic research papers from arXiv in Computer "
+            "Science, AI, and Machine Learning.\n\n"
+            f"User Query: {query}\n\n"
+            "Evaluate whether this query is:\n"
+            "- About CS/AI/ML research topics such as neural networks, algorithms, "
+            "models, architectures, or techniques\n"
+            "- A question that requires academic paper knowledge to answer\n"
+            "- Within the domain of Computer Science research\n\n"
+            "Assign a relevance score from 0 to 100:\n"
+            "- 80-100: Clearly about CS/AI/ML research, such as 'What are "
+            "transformer architectures?' or 'How does BERT work?'\n"
+            "- 60-79: Potentially research-related but unclear, such as 'Tell me "
+            "about attention mechanisms'\n"
+            "- 40-59: Borderline or ambiguous, such as 'What is machine learning?'\n"
+            "- 0-39: Not about research papers, such as 'What is a dog?', 'Hello', "
+            "or 'What is 2+2?'\n\n"
             "Return valid JSON only in this form:\n"
             '{"score": 0, "reason": "brief explanation"}'
         )

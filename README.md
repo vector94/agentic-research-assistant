@@ -10,6 +10,7 @@ retrieved passages from those papers.
 - Splits papers into searchable chunks and creates embeddings with Jina AI
 - Supports BM25, vector, and hybrid search with OpenSearch
 - Generates grounded answers with Ollama and streams them through the API or Gradio
+- Routes agentic questions through guardrails, relevance grading, and query rewriting
 - Caches repeated questions in Redis
 - Traces the RAG pipeline with Langfuse
 
@@ -44,7 +45,7 @@ flowchart LR
 - PostgreSQL, SQLAlchemy, and Alembic
 - Docling
 - OpenSearch and Jina AI embeddings
-- Ollama
+- Ollama, LangGraph, and LangChain Core
 - Redis and Langfuse
 - Gradio and Docker Compose
 - pytest and Ruff
@@ -91,6 +92,7 @@ uv run alembic upgrade head
 | `GET` | `/api/v1/papers/search/vector` | Run vector search over chunks |
 | `GET` | `/api/v1/papers/search/hybrid` | Run hybrid search over chunks |
 | `POST` | `/api/v1/ask` | Ask a RAG question |
+| `POST` | `/api/v1/ask-agentic` | Ask with guardrails and adaptive retrieval |
 | `POST` | `/api/v1/stream` | Stream a RAG answer |
 
 The interactive API documentation contains all query parameters and response

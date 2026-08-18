@@ -14,3 +14,8 @@ class RagResponse(BaseModel):
     sources: list[str]
     chunks_used: int
     search_mode: Literal["hybrid"] = "hybrid"
+
+
+class AgenticRagResponse(RagResponse):
+    reasoning_steps: list[str]
+    retrieval_attempts: int

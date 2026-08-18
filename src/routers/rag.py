@@ -5,12 +5,26 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from src.schemas.rag import RagRequest, RagResponse
+from src.schemas.rag import AgenticRagResponse, RagRequest, RagResponse
+from src.services.agents.factory import make_agentic_rag_service
 from src.services.cache.factory import make_cache_client
 from src.services.rag_factory import make_rag_service
 
 router = APIRouter(prefix="/api/v1", tags=["rag"])
 logger = logging.getLogger(__name__)
+
+
+@router.post("/ask-agentic", response_model=AgenticRagResponse)
+async def ask_agentic_question(request: RagRequest) -> AgenticRagResponse:
+    service = make_agentic_rag_service()
+
+    try:
+        return await service.answer(
+            query=request.query,
+            top_k=request.top_k,
+        )
+    finally:
+        await service.close()
 
 
 @router.post("/ask", response_model=RagResponse)

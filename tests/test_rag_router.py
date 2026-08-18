@@ -2,8 +2,8 @@ import asyncio
 import json
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.routers.rag import ask_question, stream_answer
-from src.schemas.rag import RagRequest, RagResponse
+from src.routers.rag import ask_agentic_question, ask_question, stream_answer
+from src.schemas.rag import AgenticRagResponse, RagRequest, RagResponse
 
 
 def make_response(query: str) -> RagResponse:
@@ -72,6 +72,30 @@ def test_ask_question_caches_generated_response() -> None:
     cache.set.assert_awaited_once_with(request, generated_response)
     service.close.assert_awaited_once()
     cache.close.assert_awaited_once()
+
+
+def test_ask_agentic_question_runs_agent_workflow() -> None:
+    request = RagRequest(query="How does retrieval work?", top_k=2)
+    generated_response = AgenticRagResponse(
+        query=request.query,
+        answer="Agentic answer",
+        sources=["https://arxiv.org/pdf/1234.5678"],
+        chunks_used=1,
+        reasoning_steps=["Retrieved and graded relevant chunks"],
+        retrieval_attempts=1,
+    )
+    service = AsyncMock()
+    service.answer.return_value = generated_response
+
+    with patch("src.routers.rag.make_agentic_rag_service", return_value=service):
+        response = asyncio.run(ask_agentic_question(request))
+
+    assert response == generated_response
+    service.answer.assert_awaited_once_with(
+        query=request.query,
+        top_k=request.top_k,
+    )
+    service.close.assert_awaited_once()
 
 
 def test_stream_answer_replays_cached_response() -> None:
