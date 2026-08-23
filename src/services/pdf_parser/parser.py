@@ -13,6 +13,7 @@ class PdfParserService:
         do_ocr: bool = False,
         do_table_structure: bool = True,
     ) -> None:
+        self._parse_lock = asyncio.Lock()
         self.parser = DoclingParser(
             max_pages=max_pages,
             max_file_size_mb=max_file_size_mb,
@@ -21,7 +22,8 @@ class PdfParserService:
         )
 
     async def parse(self, pdf_path: Path) -> PdfContent:
-        return await asyncio.to_thread(
-            self.parser.parse,
-            pdf_path,
-        )
+        async with self._parse_lock:
+            return await asyncio.to_thread(
+                self.parser.parse,
+                pdf_path,
+            )

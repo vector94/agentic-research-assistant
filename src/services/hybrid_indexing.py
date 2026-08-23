@@ -26,7 +26,14 @@ class HybridIndexingService:
     async def index_paper(
         self,
         paper: Paper,
+        replace_existing: bool = False,
     ) -> dict[str, int]:
+        if replace_existing:
+            await asyncio.to_thread(
+                self.opensearch_client.delete_paper_chunks,
+                paper.arxiv_id,
+            )
+
         sections = [PaperSection.model_validate(section) for section in paper.sections or []]
 
         chunks = self.chunker.chunk_paper(
@@ -89,6 +96,7 @@ class HybridIndexingService:
     async def index_papers(
         self,
         papers: list[Paper],
+        replace_existing: bool = False,
     ) -> dict[str, int]:
         totals = {
             "papers_found": len(papers),
@@ -103,7 +111,10 @@ class HybridIndexingService:
 
         for paper in papers:
             try:
-                result = await self.index_paper(paper)
+                result = await self.index_paper(
+                    paper,
+                    replace_existing=replace_existing,
+                )
             except Exception:
                 logger.exception(
                     "Failed to index chunks for paper %s",

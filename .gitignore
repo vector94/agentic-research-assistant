@@ -41,6 +41,7 @@ docs/
 
 # Local code knowledge graph
 graphify-out/
+CLAUDE.md
 
 # IDE and editor settings
 .idea/

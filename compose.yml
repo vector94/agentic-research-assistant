@@ -56,6 +56,46 @@ services:
       timeout: 5s
       retries: 5
 
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: utc
+      AIRFLOW__CORE__PARALLELISM: "4"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+      PYTHONPATH: /opt/airflow:/opt/airflow/dags
+      DATABASE_URL: postgresql+psycopg://research_user:research_password@postgres:5432/research_assistant
+      OPENSEARCH_URL: http://opensearch:9200
+      JINA_API_KEY: ${JINA_API_KEY}
+      ARXIV_QUERY: cat:cs.AI
+      ARXIV_MAX_RESULTS: "5"
+      PDF_RETENTION_DAYS: "30"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - airflow_data:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./src:/opt/airflow/src:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v2/monitor/health')\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
   redis:
     image: redis:7-alpine
     ports:
@@ -155,3 +195,4 @@ volumes:
   opensearch_data:
   ollama_data:
   redis_data:
+  airflow_data:

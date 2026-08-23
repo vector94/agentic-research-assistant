@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import Paper
@@ -46,3 +46,21 @@ class PaperRepository:
         result = await self.session.execute(statement)
 
         return list(result.scalars().all())
+
+    async def list_recent(self, limit: int = 100) -> list[Paper]:
+        statement = select(Paper).order_by(Paper.created_at.desc()).limit(limit)
+        result = await self.session.execute(statement)
+
+        return list(result.scalars().all())
+
+    async def list_created_since(self, cutoff: datetime) -> list[Paper]:
+        statement = select(Paper).where(Paper.created_at >= cutoff).order_by(Paper.created_at.asc())
+        result = await self.session.execute(statement)
+
+        return list(result.scalars().all())
+
+    async def count(self) -> int:
+        statement = select(func.count(Paper.id))
+        result = await self.session.execute(statement)
+
+        return result.scalar_one()

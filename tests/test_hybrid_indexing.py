@@ -53,7 +53,7 @@ def test_index_paper_chunks_embeds_and_indexes_documents() -> None:
         embedding_model="jina-embeddings-v3",
     )
 
-    result = asyncio.run(service.index_paper(paper))
+    result = asyncio.run(service.index_paper(paper, replace_existing=True))
 
     assert result == {
         "chunks_created": 1,
@@ -61,6 +61,7 @@ def test_index_paper_chunks_embeds_and_indexes_documents() -> None:
         "indexed": 1,
         "failed": 0,
     }
+    opensearch_client.delete_paper_chunks.assert_called_once_with(paper.arxiv_id)
     embedding_client.embed_passages.assert_awaited_once_with([chunk.text])
 
     indexed_documents = opensearch_client.bulk_index_chunks.call_args.args[0]

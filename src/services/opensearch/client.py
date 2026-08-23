@@ -63,6 +63,15 @@ class OpenSearchClient:
             "failed": len(errors),
         }
 
+    def delete_paper_chunks(self, arxiv_id: str) -> bool:
+        response = self.client.delete_by_query(
+            index=self.index_name,
+            body={"query": {"term": {"arxiv_id": arxiv_id}}},
+            refresh=True,
+        )
+
+        return response.get("deleted", 0) > 0
+
     def search_chunks_vector(
         self,
         query_embedding: list[float],

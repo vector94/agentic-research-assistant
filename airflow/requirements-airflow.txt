@@ -1,0 +1,20 @@
+# Core dependencies needed for Airflow tasks
+httpx>=0.28.1
+sqlalchemy[asyncio]>=2.0.51,<3.0.0
+pydantic-settings>=2.14.2
+python-dateutil>=2.8.0
+
+# arXiv client
+arxiv>=2.2.0
+
+# PDF processing dependencies
+docling>=2.52.0
+# Forced to headless: docling pulls in opencv-python by default, which needs
+# GUI libs (libGL etc.) not present in this container and not worth adding.
+opencv-python-headless>=4.11.0.86
+
+# Search engine dependencies
+opensearch-py>=3.0.0
+
+# Database drivers
+psycopg[binary]>=3.3.4

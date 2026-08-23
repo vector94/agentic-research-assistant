@@ -3,6 +3,24 @@ from unittest.mock import Mock
 from src.services.opensearch.client import OpenSearchClient
 
 
+def test_delete_paper_chunks_deletes_matching_arxiv_id() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.delete_by_query.return_value = {"deleted": 3}
+
+    deleted = client.delete_paper_chunks("1234.5678v1")
+
+    assert deleted is True
+    client.client.delete_by_query.assert_called_once_with(
+        index="research-paper-chunks",
+        body={"query": {"term": {"arxiv_id": "1234.5678v1"}}},
+        refresh=True,
+    )
+
+
 def test_search_papers_builds_multifield_query() -> None:
     client = OpenSearchClient(
         host="http://localhost:9200",
