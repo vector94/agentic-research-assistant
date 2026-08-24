@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +21,7 @@ from src.services.search import PaperSearchService
 from src.services.vector_search_factory import make_vector_search_service
 
 router = APIRouter(prefix="/api/v1/papers", tags=["papers"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/ingest")
@@ -43,6 +46,12 @@ async def ingest_papers(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(error),
         ) from error
+    except Exception as error:
+        logger.exception("Paper ingestion failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to ingest papers from arXiv.",
+        ) from error
 
 
 @router.post("/index")
@@ -59,7 +68,14 @@ async def index_papers(
         paper_indexer=paper_indexer,
     )
 
-    return await service.index_processed_papers(limit=limit)
+    try:
+        return await service.index_processed_papers(limit=limit)
+    except Exception as error:
+        logger.exception("Paper indexing failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to index papers.",
+        ) from error
 
 
 @router.post("/index/chunks")
@@ -73,6 +89,12 @@ async def index_paper_chunks(
 
     try:
         return await service.index_papers(papers)
+    except Exception as error:
+        logger.exception("Chunk indexing failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to index paper chunks.",
+        ) from error
     finally:
         await service.close()
 
@@ -92,14 +114,21 @@ async def search_papers(
     opensearch_client = make_opensearch_client()
     service = PaperSearchService(opensearch_client)
 
-    return await service.search(
-        query=query,
-        size=size,
-        from_=offset,
-        categories=categories,
-        latest=latest,
-        fuzzy=fuzzy,
-    )
+    try:
+        return await service.search(
+            query=query,
+            size=size,
+            from_=offset,
+            categories=categories,
+            latest=latest,
+            fuzzy=fuzzy,
+        )
+    except Exception as error:
+        logger.exception("Paper search failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search papers.",
+        ) from error
 
 
 @router.get(
@@ -117,6 +146,12 @@ async def search_paper_chunks_vector(
             query=query,
             size=size,
         )
+    except Exception as error:
+        logger.exception("Vector chunk search failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search paper chunks.",
+        ) from error
     finally:
         await service.close()
 
@@ -136,5 +171,11 @@ async def search_paper_chunks_hybrid(
             query=query,
             size=size,
         )
+    except Exception as error:
+        logger.exception("Hybrid chunk search failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search paper chunks.",
+        ) from error
     finally:
         await service.close()

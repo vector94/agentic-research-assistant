@@ -2,7 +2,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from src.schemas.rag import AgenticRagResponse, RagRequest, RagResponse
@@ -23,6 +23,12 @@ async def ask_agentic_question(request: RagRequest) -> AgenticRagResponse:
             query=request.query,
             top_k=request.top_k,
         )
+    except Exception as error:
+        logger.exception("Agentic RAG request failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate an answer.",
+        ) from error
     finally:
         await service.close()
 
@@ -54,9 +60,14 @@ async def ask_question(request: RagRequest) -> RagResponse:
             logger.exception("Failed to store the RAG response cache")
 
         return response
+    except Exception as error:
+        logger.exception("RAG request failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate an answer.",
+        ) from error
     finally:
         await service.close()
-        await cache.close()
 
 
 @router.post("/stream")
@@ -118,9 +129,11 @@ async def stream_answer(request: RagRequest) -> StreamingResponse:
                         logger.exception("Failed to store the streaming RAG response cache")
 
                 yield f"data: {json.dumps(event)}\n\n"
+        except Exception:
+            logger.exception("Streaming RAG generation failed")
+            yield f"data: {json.dumps({'error': 'Failed to generate an answer. Please try again.'})}\n\n"
         finally:
             await service.close()
-            await cache.close()
 
     return StreamingResponse(
         generate_events(),

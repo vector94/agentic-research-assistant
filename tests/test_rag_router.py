@@ -47,7 +47,7 @@ def test_ask_question_returns_cached_response() -> None:
     service.answer.assert_not_awaited()
     cache.set.assert_not_awaited()
     service.close.assert_awaited_once()
-    cache.close.assert_awaited_once()
+    cache.close.assert_not_awaited()
 
 
 def test_ask_question_caches_generated_response() -> None:
@@ -71,7 +71,7 @@ def test_ask_question_caches_generated_response() -> None:
     )
     cache.set.assert_awaited_once_with(request, generated_response)
     service.close.assert_awaited_once()
-    cache.close.assert_awaited_once()
+    cache.close.assert_not_awaited()
 
 
 def test_ask_agentic_question_runs_agent_workflow() -> None:
@@ -125,7 +125,7 @@ def test_stream_answer_replays_cached_response() -> None:
     service.answer_stream.assert_not_called()
     cache.set.assert_not_awaited()
     service.close.assert_awaited_once()
-    cache.close.assert_awaited_once()
+    cache.close.assert_not_awaited()
 
 
 def test_stream_answer_caches_completed_response() -> None:
@@ -167,4 +167,4 @@ def test_stream_answer_caches_completed_response() -> None:
         ),
     )
     service.close.assert_awaited_once()
-    cache.close.assert_awaited_once()
+    cache.close.assert_not_awaited()

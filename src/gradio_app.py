@@ -59,6 +59,10 @@ async def stream_response(
 
                     event = json.loads(line.removeprefix("data: "))
 
+                    if "error" in event:
+                        yield f"Something went wrong: {event['error']}"
+                        return
+
                     if "sources" in event:
                         sources = event["sources"]
                         chunks_used = event.get("chunks_used", 0)

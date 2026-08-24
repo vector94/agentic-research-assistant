@@ -1,9 +1,12 @@
+from functools import lru_cache
+
 from redis.asyncio import Redis
 
 from src.config import Settings, get_settings
 from src.services.cache.client import CacheClient
 
 
+@lru_cache(maxsize=1)
 def make_cache_client(settings: Settings | None = None) -> CacheClient:
     if settings is None:
         settings = get_settings()
