@@ -1,5 +1,6 @@
 from langgraph.runtime import Runtime
 
+from src.exceptions import OllamaError
 from src.services.agents.context import AgentContext
 from src.services.agents.models import GuardrailResult
 from src.services.agents.state import AgentRoute, AgentState
@@ -20,10 +21,17 @@ async def run_guardrail(
         input_data={"query": query},
         metadata={"threshold": context.guardrail_threshold},
     ) as observation:
-        result = await context.ollama_client.generate_structured(
-            prompt=prompt,
-            response_model=GuardrailResult,
-        )
+        try:
+            result = await context.ollama_client.generate_structured(
+                prompt=prompt,
+                response_model=GuardrailResult,
+            )
+        except OllamaError:
+            result = GuardrailResult(
+                score=50,
+                reason="Guardrail check unavailable; defaulting to borderline.",
+            )
+
         route: AgentRoute = "retrieve" if result.score >= context.guardrail_threshold else "out_of_scope"
         context.tracer.update(
             observation,

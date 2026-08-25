@@ -1,8 +1,21 @@
 from langgraph.runtime import Runtime
 
+from src.exceptions import OllamaError
 from src.services.agents.context import AgentContext
 from src.services.agents.models import DocumentGrade
 from src.services.agents.state import AgentRoute, AgentState
+
+_MIN_RELEVANT_CHUNK_CHARS = 200
+
+
+def _fallback_grade(chunks: list) -> DocumentGrade:
+    """A cheap heuristic used only when the LLM grading call is unavailable."""
+
+    total_chars = sum(len(chunk.chunk_text) for chunk in chunks)
+    return DocumentGrade(
+        is_relevant=total_chars >= _MIN_RELEVANT_CHUNK_CHARS,
+        reason="Grading unavailable; used a content-length heuristic instead.",
+    )
 
 
 async def run_document_grading(
@@ -26,10 +39,13 @@ async def run_document_grading(
                 query=query,
                 chunks=chunks,
             )
-            grade = await context.ollama_client.generate_structured(
-                prompt=prompt,
-                response_model=DocumentGrade,
-            )
+            try:
+                grade = await context.ollama_client.generate_structured(
+                    prompt=prompt,
+                    response_model=DocumentGrade,
+                )
+            except OllamaError:
+                grade = _fallback_grade(chunks)
         else:
             grade = DocumentGrade(
                 is_relevant=False,

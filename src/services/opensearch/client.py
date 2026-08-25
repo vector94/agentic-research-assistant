@@ -1,6 +1,6 @@
 from typing import Any
 
-from opensearchpy import OpenSearch, helpers
+from opensearchpy import OpenSearch, RequestError, helpers
 
 
 class OpenSearchClient:
@@ -23,10 +23,19 @@ class OpenSearchClient:
         if self.client.indices.exists(index=self.index_name):
             return False
 
-        self.client.indices.create(
-            index=self.index_name,
-            body=mapping,
-        )
+        try:
+            self.client.indices.create(
+                index=self.index_name,
+                body=mapping,
+            )
+        except RequestError as error:
+            # Another process (e.g. the API and Airflow starting at the same
+            # time) may have created the index between our exists() check and
+            # this call. Treat that race as a no-op instead of failing.
+            if "resource_already_exists_exception" in (error.error or ""):
+                return False
+            raise
+
         return True
 
     def index_paper(self, paper: dict[str, Any]) -> bool:

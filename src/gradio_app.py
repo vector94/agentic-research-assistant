@@ -131,6 +131,7 @@ def main() -> None:
         server_name=GRADIO_HOST,
         server_port=GRADIO_PORT,
         share=False,
+        show_api=False,
     )
 
 

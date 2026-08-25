@@ -1,8 +1,14 @@
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
 
+from src.exceptions import OllamaError
 from src.services.agents.context import AgentContext
 from src.services.agents.state import AgentState
+
+_UNAVAILABLE_ANSWER = (
+    "I found relevant research papers, but couldn't generate an answer right now "
+    "due to a service issue. Please try again shortly."
+)
 
 
 async def run_answer_generation(
@@ -42,16 +48,18 @@ async def run_answer_generation(
         input_data=prompt,
         metadata={"chunk_count": len(chunks)},
     ) as observation:
-        answer = (await context.ollama_client.generate(prompt)).strip()
-
-        if not answer:
-            raise ValueError("Ollama returned an empty answer")
+        try:
+            answer = (await context.ollama_client.generate(prompt)).strip()
+            if not answer:
+                raise ValueError("Ollama returned an empty answer")
+            reasoning_step = f"Generated an answer from {len(chunks)} retrieved chunks"
+        except (OllamaError, ValueError):
+            answer = _UNAVAILABLE_ANSWER
+            reasoning_step = "Answer generation was unavailable; returned a fallback message"
 
         context.tracer.update(observation, answer)
 
     return {
         "messages": [AIMessage(content=answer)],
-        "reasoning_steps": [
-            f"Generated an answer from {len(chunks)} retrieved chunks",
-        ],
+        "reasoning_steps": [reasoning_step],
     }

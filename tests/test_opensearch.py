@@ -1,6 +1,75 @@
 from unittest.mock import Mock
 
+import pytest
+from opensearchpy import RequestError
+
 from src.services.opensearch.client import OpenSearchClient
+
+
+def test_create_index_creates_when_missing() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.indices.exists.return_value = False
+
+    created = client.create_index({"mappings": {}})
+
+    assert created is True
+    client.client.indices.create.assert_called_once_with(
+        index="research-paper-chunks",
+        body={"mappings": {}},
+    )
+
+
+def test_create_index_skips_when_already_exists() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.indices.exists.return_value = True
+
+    created = client.create_index({"mappings": {}})
+
+    assert created is False
+    client.client.indices.create.assert_not_called()
+
+
+def test_create_index_treats_concurrent_creation_as_a_no_op() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.indices.exists.return_value = False
+    client.client.indices.create.side_effect = RequestError(
+        400,
+        "resource_already_exists_exception",
+        {"error": {"reason": "index already exists"}},
+    )
+
+    created = client.create_index({"mappings": {}})
+
+    assert created is False
+
+
+def test_create_index_reraises_unrelated_request_errors() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.indices.exists.return_value = False
+    client.client.indices.create.side_effect = RequestError(
+        400,
+        "mapper_parsing_exception",
+        {"error": {"reason": "bad mapping"}},
+    )
+
+    with pytest.raises(RequestError):
+        client.create_index({"mappings": {}})
 
 
 def test_delete_paper_chunks_deletes_matching_arxiv_id() -> None:

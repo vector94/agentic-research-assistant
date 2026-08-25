@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
+from src.exceptions import OllamaError
 from src.services.agents import AgentContext, AgentState, DocumentGrade, GuardrailResult
 from src.services.agents.nodes import (
     run_answer_generation,
@@ -321,3 +322,156 @@ def test_answer_generation_skips_model_for_irrelevant_chunks() -> None:
     answer_prompt_builder.build.assert_not_called()
     ollama_client.generate.assert_not_awaited()
     assert "could not find relevant" in result["messages"][0].content
+
+
+def test_guardrail_falls_back_to_borderline_score_when_ollama_is_unavailable() -> None:
+    prompt_builder = Mock()
+    prompt_builder.build_guardrail.return_value = "Guardrail prompt"
+
+    ollama_client = Mock()
+    ollama_client.generate_structured = AsyncMock(side_effect=OllamaError("down"))
+
+    tracer = Mock()
+    tracer.span.return_value = nullcontext()
+
+    context = AgentContext(
+        search_service=Mock(),
+        ollama_client=ollama_client,
+        prompt_builder=prompt_builder,
+        tracer=tracer,
+        answer_prompt_builder=Mock(),
+        guardrail_threshold=60,
+    )
+    runtime = SimpleNamespace(context=context)
+    state = AgentState(
+        messages=[HumanMessage(content="How do transformers work?")],
+        original_query="How do transformers work?",
+        rewritten_query=None,
+        retrieval_attempts=0,
+        retrieved_chunks=[],
+        guardrail_result=None,
+        document_grade=None,
+        routing_decision=None,
+        reasoning_steps=[],
+    )
+
+    result = asyncio.run(run_guardrail(state, runtime))
+
+    assert result["guardrail_result"].score == 50
+    assert result["routing_decision"] == "out_of_scope"
+
+
+def test_document_grading_falls_back_to_length_heuristic_when_ollama_is_unavailable() -> None:
+    chunks = [Mock(chunk_text="x" * 250)]
+    prompt_builder = Mock()
+    prompt_builder.build_document_grade.return_value = "Grading prompt"
+
+    ollama_client = Mock()
+    ollama_client.generate_structured = AsyncMock(side_effect=OllamaError("down"))
+
+    tracer = Mock()
+    tracer.span.return_value = nullcontext()
+
+    context = AgentContext(
+        search_service=Mock(),
+        ollama_client=ollama_client,
+        prompt_builder=prompt_builder,
+        tracer=tracer,
+        answer_prompt_builder=Mock(),
+        max_retrieval_attempts=2,
+    )
+    runtime = SimpleNamespace(context=context)
+    state = AgentState(
+        messages=[HumanMessage(content="Original question")],
+        original_query="Original question",
+        rewritten_query=None,
+        retrieval_attempts=1,
+        retrieved_chunks=chunks,
+        guardrail_result=None,
+        document_grade=None,
+        routing_decision=None,
+        reasoning_steps=[],
+    )
+
+    result = asyncio.run(run_document_grading(state, runtime))
+
+    assert result["document_grade"].is_relevant is True
+    assert result["routing_decision"] == "generate_answer"
+
+
+def test_query_rewriting_falls_back_to_keyword_expansion_when_ollama_is_unavailable() -> None:
+    prompt_builder = Mock()
+    prompt_builder.build_query_rewrite.return_value = "Rewrite prompt"
+
+    ollama_client = Mock()
+    ollama_client.model = "test-model"
+    ollama_client.generate = AsyncMock(side_effect=OllamaError("down"))
+
+    tracer = Mock()
+    tracer.generation.return_value = nullcontext()
+
+    context = AgentContext(
+        search_service=Mock(),
+        ollama_client=ollama_client,
+        prompt_builder=prompt_builder,
+        tracer=tracer,
+        answer_prompt_builder=Mock(),
+    )
+    runtime = SimpleNamespace(context=context)
+    state = AgentState(
+        messages=[HumanMessage(content="What is the transformer architecture?")],
+        original_query="What is the transformer architecture?",
+        rewritten_query=None,
+        retrieval_attempts=1,
+        retrieved_chunks=[],
+        guardrail_result=None,
+        document_grade=None,
+        routing_decision="rewrite_query",
+        reasoning_steps=[],
+    )
+
+    result = asyncio.run(run_query_rewriting(state, runtime))
+
+    assert result["rewritten_query"] == "transformer architecture?"
+    assert result["routing_decision"] == "retrieve"
+
+
+def test_answer_generation_falls_back_to_apology_when_ollama_is_unavailable() -> None:
+    chunks = [Mock(), Mock()]
+    answer_prompt_builder = Mock()
+    answer_prompt_builder.build.return_value = "Answer prompt"
+
+    ollama_client = Mock()
+    ollama_client.model = "test-model"
+    ollama_client.generate = AsyncMock(side_effect=OllamaError("down"))
+
+    tracer = Mock()
+    tracer.generation.return_value = nullcontext()
+
+    context = AgentContext(
+        search_service=Mock(),
+        ollama_client=ollama_client,
+        prompt_builder=Mock(),
+        tracer=tracer,
+        answer_prompt_builder=answer_prompt_builder,
+    )
+    runtime = SimpleNamespace(context=context)
+    state = AgentState(
+        messages=[HumanMessage(content="Original question")],
+        original_query="Original question",
+        rewritten_query="Improved question",
+        retrieval_attempts=1,
+        retrieved_chunks=chunks,
+        guardrail_result=None,
+        document_grade=DocumentGrade(
+            is_relevant=True,
+            reason="The chunks answer the question",
+        ),
+        routing_decision="generate_answer",
+        reasoning_steps=[],
+    )
+
+    result = asyncio.run(run_answer_generation(state, runtime))
+
+    assert isinstance(result["messages"][0], AIMessage)
+    assert "couldn't generate an answer" in result["messages"][0].content
