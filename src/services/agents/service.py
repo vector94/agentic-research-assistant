@@ -24,6 +24,7 @@ class AgenticRagService:
         self,
         query: str,
         top_k: int = 3,
+        categories: list[str] | None = None,
     ) -> AgenticRagResponse:
         if not query.strip():
             raise ValueError("Query cannot be empty")
@@ -42,7 +43,7 @@ class AgenticRagService:
             routing_decision=None,
             reasoning_steps=[],
         )
-        runtime_context = replace(self.context, top_k=top_k)
+        runtime_context = replace(self.context, top_k=top_k, categories=categories)
 
         with self.context.tracer.span(
             name="agentic_rag_request",

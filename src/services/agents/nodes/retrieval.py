@@ -22,6 +22,7 @@ async def run_retrieval(
         response = await context.search_service.search(
             query=query,
             size=context.top_k,
+            categories=context.categories,
         )
         chunks = response.results
         context.tracer.update(

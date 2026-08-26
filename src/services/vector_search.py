@@ -18,6 +18,7 @@ class VectorSearchService:
         self,
         query: str,
         size: int = 10,
+        categories: list[str] | None = None,
     ) -> ChunkSearchResponse:
         if not query.strip():
             raise ValueError("Query cannot be empty")
@@ -27,6 +28,7 @@ class VectorSearchService:
             self.opensearch_client.search_chunks_vector,
             query_embedding,
             size,
+            categories,
         )
 
         hits = response["hits"]

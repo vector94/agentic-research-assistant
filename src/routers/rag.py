@@ -22,6 +22,7 @@ async def ask_agentic_question(request: RagRequest) -> AgenticRagResponse:
         return await service.answer(
             query=request.query,
             top_k=request.top_k,
+            categories=request.categories,
         )
     except Exception as error:
         logger.exception("Agentic RAG request failed")
@@ -52,6 +53,7 @@ async def ask_question(request: RagRequest) -> RagResponse:
         response = await service.answer(
             query=request.query,
             top_k=request.top_k,
+            categories=request.categories,
         )
 
         try:
@@ -105,6 +107,7 @@ async def stream_answer(request: RagRequest) -> StreamingResponse:
             async for event in service.answer_stream(
                 query=request.query,
                 top_k=request.top_k,
+                categories=request.categories,
             ):
                 event_sources = event.get("sources")
                 if isinstance(event_sources, list):

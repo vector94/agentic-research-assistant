@@ -19,3 +19,4 @@ class AgentContext:
     top_k: int = 3
     max_retrieval_attempts: int = 2
     guardrail_threshold: int = 60
+    categories: list[str] | None = None

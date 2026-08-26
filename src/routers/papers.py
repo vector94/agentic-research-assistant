@@ -138,6 +138,7 @@ async def search_papers(
 async def search_paper_chunks_vector(
     query: str = Query(min_length=2),
     size: int = Query(default=10, ge=1, le=50),
+    categories: list[str] | None = Query(default=None),
 ) -> ChunkSearchResponse:
     service = make_vector_search_service()
 
@@ -145,6 +146,7 @@ async def search_paper_chunks_vector(
         return await service.search(
             query=query,
             size=size,
+            categories=categories,
         )
     except Exception as error:
         logger.exception("Vector chunk search failed")
@@ -163,6 +165,7 @@ async def search_paper_chunks_vector(
 async def search_paper_chunks_hybrid(
     query: str = Query(min_length=2),
     size: int = Query(default=10, ge=1, le=50),
+    categories: list[str] | None = Query(default=None),
 ) -> ChunkSearchResponse:
     service = make_hybrid_search_service()
 
@@ -170,6 +173,7 @@ async def search_paper_chunks_hybrid(
         return await service.search(
             query=query,
             size=size,
+            categories=categories,
         )
     except Exception as error:
         logger.exception("Hybrid chunk search failed")

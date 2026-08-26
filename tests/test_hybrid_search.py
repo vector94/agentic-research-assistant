@@ -1,5 +1,6 @@
+import asyncio
 from datetime import UTC, datetime
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 from src.services.hybrid_search import HybridSearchService
 
@@ -58,3 +59,30 @@ def test_rrf_rewards_chunks_ranked_highly_by_both_searches() -> None:
         "chunk-a",
     ]
     assert results[0].score > results[1].score
+
+
+def test_search_passes_categories_to_both_underlying_searches() -> None:
+    opensearch_client = Mock()
+    opensearch_client.search_chunks_bm25.return_value = {"hits": {"hits": []}}
+    opensearch_client.search_chunks_vector.return_value = {"hits": {"hits": []}}
+
+    embedding_client = Mock()
+    embedding_client.embed_query = AsyncMock(return_value=[0.1, 0.2])
+
+    service = HybridSearchService(
+        embedding_client=embedding_client,
+        opensearch_client=opensearch_client,
+    )
+
+    asyncio.run(service.search(query="attention mechanisms", size=5, categories=["cs.AI"]))
+
+    opensearch_client.search_chunks_bm25.assert_called_once_with(
+        "attention mechanisms",
+        10,
+        ["cs.AI"],
+    )
+    opensearch_client.search_chunks_vector.assert_called_once_with(
+        [0.1, 0.2],
+        10,
+        ["cs.AI"],
+    )

@@ -109,6 +109,7 @@ def test_retrieval_uses_rewritten_query_and_updates_state() -> None:
     search_service.search.assert_awaited_once_with(
         query="Improved search query",
         size=3,
+        categories=None,
     )
     assert result["retrieval_attempts"] == 2
     assert result["retrieved_chunks"] == chunks

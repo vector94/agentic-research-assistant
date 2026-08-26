@@ -95,6 +95,7 @@ def test_answer_generates_from_relevant_retrieved_chunks() -> None:
     search_service.search.assert_awaited_once_with(
         query="How do transformers work?",
         size=1,
+        categories=None,
     )
     assert response.answer == "Attention relates every token to other tokens."
     assert response.sources == [chunk.pdf_url]
@@ -135,10 +136,12 @@ def test_answer_rewrites_query_and_retries_retrieval() -> None:
     assert search_service.search.await_args_list[0].kwargs == {
         "query": "How do transformers work?",
         "size": 2,
+        "categories": None,
     }
     assert search_service.search.await_args_list[1].kwargs == {
         "query": "transformer self-attention token relationships",
         "size": 2,
+        "categories": None,
     }
     assert response.answer == "Grounded answer after retry"
     assert response.retrieval_attempts == 2

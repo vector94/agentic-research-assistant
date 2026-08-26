@@ -68,6 +68,7 @@ def test_ask_question_caches_generated_response() -> None:
     service.answer.assert_awaited_once_with(
         query=request.query,
         top_k=request.top_k,
+        categories=request.categories,
     )
     cache.set.assert_awaited_once_with(request, generated_response)
     service.close.assert_awaited_once()
@@ -94,6 +95,7 @@ def test_ask_agentic_question_runs_agent_workflow() -> None:
     service.answer.assert_awaited_once_with(
         query=request.query,
         top_k=request.top_k,
+        categories=request.categories,
     )
     service.close.assert_awaited_once()
 
@@ -133,7 +135,7 @@ def test_stream_answer_caches_completed_response() -> None:
     service = Mock()
     service.close = AsyncMock()
 
-    async def generated_events(query: str, top_k: int):
+    async def generated_events(query: str, top_k: int, categories: list[str] | None):
         yield {
             "sources": ["https://arxiv.org/pdf/1234.5678"],
             "chunks_used": top_k,
@@ -156,6 +158,7 @@ def test_stream_answer_caches_completed_response() -> None:
     service.answer_stream.assert_called_once_with(
         query=request.query,
         top_k=request.top_k,
+        categories=request.categories,
     )
     cache.set.assert_awaited_once_with(
         request,

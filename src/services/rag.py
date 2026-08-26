@@ -24,6 +24,7 @@ class RagService:
         self,
         query: str,
         top_k: int = 3,
+        categories: list[str] | None = None,
     ) -> RagResponse:
         if not query.strip():
             raise ValueError("Query cannot be empty")
@@ -43,6 +44,7 @@ class RagService:
                 search_response = await self.hybrid_search_service.search(
                     query=query,
                     size=top_k,
+                    categories=categories,
                 )
                 self.tracer.update(
                     retrieval_span,
@@ -98,6 +100,7 @@ class RagService:
         self,
         query: str,
         top_k: int = 3,
+        categories: list[str] | None = None,
     ) -> AsyncIterator[dict[str, object]]:
         if not query.strip():
             raise ValueError("Query cannot be empty")
@@ -117,6 +120,7 @@ class RagService:
                 search_response = await self.hybrid_search_service.search(
                     query=query,
                     size=top_k,
+                    categories=categories,
                 )
                 self.tracer.update(
                     retrieval_span,

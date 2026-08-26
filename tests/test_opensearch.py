@@ -72,6 +72,69 @@ def test_create_index_reraises_unrelated_request_errors() -> None:
         client.create_index({"mappings": {}})
 
 
+def test_search_chunks_vector_adds_category_filter() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.search.return_value = {"hits": {"hits": []}}
+
+    client.search_chunks_vector(
+        query_embedding=[0.1, 0.2],
+        categories=["cs.AI", "cs.LG"],
+    )
+
+    body = client.client.search.call_args.kwargs["body"]
+    assert body["query"]["bool"]["filter"] == [
+        {
+            "terms": {
+                "categories": ["cs.AI", "cs.LG"],
+            }
+        }
+    ]
+    assert "knn" in body["query"]["bool"]["must"][0]
+
+
+def test_search_chunks_vector_skips_filter_without_categories() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.search.return_value = {"hits": {"hits": []}}
+
+    client.search_chunks_vector(query_embedding=[0.1, 0.2])
+
+    body = client.client.search.call_args.kwargs["body"]
+    assert "knn" in body["query"]
+    assert "bool" not in body["query"]
+
+
+def test_search_chunks_bm25_adds_category_filter() -> None:
+    client = OpenSearchClient(
+        host="http://localhost:9200",
+        index_name="research-paper-chunks",
+    )
+    client.client = Mock()
+    client.client.search.return_value = {"hits": {"hits": []}}
+
+    client.search_chunks_bm25(
+        query="attention mechanisms",
+        categories=["cs.AI"],
+    )
+
+    body = client.client.search.call_args.kwargs["body"]
+    assert body["query"]["bool"]["filter"] == [
+        {
+            "terms": {
+                "categories": ["cs.AI"],
+            }
+        }
+    ]
+    assert "multi_match" in body["query"]["bool"]["must"][0]
+
+
 def test_delete_paper_chunks_deletes_matching_arxiv_id() -> None:
     client = OpenSearchClient(
         host="http://localhost:9200",

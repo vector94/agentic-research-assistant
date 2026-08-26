@@ -29,14 +29,26 @@ class OpenSearchClient:
                 body=mapping,
             )
         except RequestError as error:
-            # Another process (e.g. the API and Airflow starting at the same
-            # time) may have created the index between our exists() check and
-            # this call. Treat that race as a no-op instead of failing.
             if "resource_already_exists_exception" in (error.error or ""):
                 return False
             raise
 
         return True
+
+    @staticmethod
+    def _apply_categories_filter(
+        query: dict[str, Any],
+        categories: list[str] | None,
+    ) -> dict[str, Any]:
+        if not categories:
+            return query
+
+        return {
+            "bool": {
+                "must": [query],
+                "filter": [{"terms": {"categories": categories}}],
+            }
+        }
 
     def index_paper(self, paper: dict[str, Any]) -> bool:
         response = self.client.index(
@@ -85,17 +97,20 @@ class OpenSearchClient:
         self,
         query_embedding: list[float],
         size: int = 10,
+        categories: list[str] | None = None,
     ) -> dict[str, Any]:
+        query: dict[str, Any] = {
+            "knn": {
+                "embedding": {
+                    "vector": query_embedding,
+                    "k": size,
+                }
+            }
+        }
+
         body = {
             "size": size,
-            "query": {
-                "knn": {
-                    "embedding": {
-                        "vector": query_embedding,
-                        "k": size,
-                    }
-                }
-            },
+            "query": self._apply_categories_filter(query, categories),
             "_source": {
                 "excludes": ["embedding"],
             },
@@ -110,23 +125,26 @@ class OpenSearchClient:
         self,
         query: str,
         size: int = 10,
+        categories: list[str] | None = None,
     ) -> dict[str, Any]:
+        search_query: dict[str, Any] = {
+            "multi_match": {
+                "query": query,
+                "fields": [
+                    "chunk_text^3",
+                    "title^2",
+                    "abstract",
+                ],
+                "type": "best_fields",
+                "operator": "or",
+                "fuzziness": "AUTO",
+                "prefix_length": 2,
+            }
+        }
+
         body = {
             "size": size,
-            "query": {
-                "multi_match": {
-                    "query": query,
-                    "fields": [
-                        "chunk_text^3",
-                        "title^2",
-                        "abstract",
-                    ],
-                    "type": "best_fields",
-                    "operator": "or",
-                    "fuzziness": "AUTO",
-                    "prefix_length": 2,
-                }
-            },
+            "query": self._apply_categories_filter(search_query, categories),
             "_source": {
                 "excludes": ["embedding"],
             },
@@ -162,24 +180,10 @@ class OpenSearchClient:
             "multi_match": multi_match,
         }
 
-        if categories:
-            search_query = {
-                "bool": {
-                    "must": [search_query],
-                    "filter": [
-                        {
-                            "terms": {
-                                "categories": categories,
-                            }
-                        }
-                    ],
-                }
-            }
-
         body = {
             "from": from_,
             "size": size,
-            "query": search_query,
+            "query": self._apply_categories_filter(search_query, categories),
             "_source": {
                 "excludes": ["raw_text"],
             },

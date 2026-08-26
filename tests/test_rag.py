@@ -67,6 +67,7 @@ def test_answer_retrieves_context_and_generates_grounded_response() -> None:
     hybrid_search_service.search.assert_awaited_once_with(
         query="How do transformers work?",
         size=1,
+        categories=None,
     )
     prompt_builder.build.assert_called_once_with(
         query="How do transformers work?",

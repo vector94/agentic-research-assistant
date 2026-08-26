@@ -24,25 +24,32 @@ class HybridSearchService:
         self,
         query: str,
         size: int = 10,
+        categories: list[str] | None = None,
     ) -> ChunkSearchResponse:
         if not query.strip():
             raise ValueError("Query cannot be empty")
 
         candidate_size = max(size * 2, 10)
-        bm25_response, query_embedding = await asyncio.gather(
+        bm25_task = asyncio.create_task(
             asyncio.to_thread(
                 self.opensearch_client.search_chunks_bm25,
                 query,
                 candidate_size,
-            ),
-            self.embedding_client.embed_query(query),
+                categories,
+            )
         )
 
-        vector_response = await asyncio.to_thread(
-            self.opensearch_client.search_chunks_vector,
-            query_embedding,
-            candidate_size,
+        query_embedding = await self.embedding_client.embed_query(query)
+        vector_task = asyncio.create_task(
+            asyncio.to_thread(
+                self.opensearch_client.search_chunks_vector,
+                query_embedding,
+                candidate_size,
+                categories,
+            )
         )
+
+        bm25_response, vector_response = await asyncio.gather(bm25_task, vector_task)
         results = self._fuse_results(
             bm25_response=bm25_response,
             vector_response=vector_response,
