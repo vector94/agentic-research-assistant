@@ -74,6 +74,9 @@ flowchart LR
     API -. traces .-> Langfuse
 ```
 
+See [docs/hybrid-search.md](docs/hybrid-search.md) for how BM25, vector search,
+and RRF fit together.
+
 ### Agentic RAG
 
 ```mermaid
@@ -90,6 +93,9 @@ flowchart TD
 
     Generate --> Result[Answer with sources and reasoning]
 ```
+
+See [docs/agentic-rag-agent.md](docs/agentic-rag-agent.md) for the six-node
+LangGraph graph and what each node does.
 
 ## Stack
 
