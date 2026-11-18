@@ -165,3 +165,9 @@ docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.
 
 The interactive API documentation contains all query parameters and response
 schemas.
+
+## License
+
+[MIT](LICENSE). Parts of the code are adapted from
+[production-agentic-rag-course](https://github.com/jamwithai/production-agentic-rag-course)
+by Jam With AI, also MIT-licensed.
